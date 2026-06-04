@@ -1,0 +1,22 @@
+.nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--cream);
+  border-bottom: 0.5px solid var(--border);
+  flex-shrink: 0;
+  position: sticky; top: 0; z-index: 50;
+}
+.logo {
+  font-family: var(--display);
+  font-size: 16px; font-weight: 700;
+  letter-spacing: -0.2px; color: var(--dark);
+  text-decoration: none;
+  display: flex; flex-direction: column;
+}
+.logo span { color: var(--violet); display: inline; }
+.tag {
+  font-size: 9px; font-weight: 400;
+  color: var(--hint); letter-spacing: 0.08em;
+  text-transform: uppercase; font-family: var(--body);
+  margin-top: 1px;
+}

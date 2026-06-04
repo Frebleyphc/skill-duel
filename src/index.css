@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+
+:root {
+  --violet:       #7421fc;
+  --violet-light: #f0ebff;
+  --violet-mid:   rgba(116, 33, 252, 0.08);
+  --lime:         #d0ff5f;
+  --lime-dark:    #a8cc3a;
+  --dark:         #1b1b1b;
+  --cream:        #fcf9f4;
+  --surface:      #ffffff;
+  --surface2:     #f7f4ef;
+  --border:       #ede8e0;
+  --border-strong:#d4cfc7;
+  --text:         #1b1b1b;
+  --muted:        #9a938b;
+  --hint:         #c4beb6;
+  --display:      'Sora', sans-serif;
+  --body:         'Inter', sans-serif;
+  --radius-sm:    8px;
+  --radius-md:    12px;
+  --radius-lg:    16px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--cream);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+#root {
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
