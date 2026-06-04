@@ -174,7 +174,7 @@ export default function Perfil() {
           </div>
         )}
 
-        <a href="https://artiva.pe" className={styles.artivaCta}>
+        <a href="https://artivalatam.com" className={styles.artivaCta}>
           <div className={styles.artivaIcon}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M10 2l2.4 5.4L18 8.3l-4 3.9.9 5.3L10 14.8 5.1 17.5l.9-5.3-4-3.9 5.6-.9L10 2z" fill="#fff"/>
