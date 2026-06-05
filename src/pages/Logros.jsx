@@ -40,12 +40,34 @@ const ALL_BADGES = [
 ]
 
 const CAT_PROGRESS = [
-  { id: 'marketing', name: 'Marketing Digital',
-    icon: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="#7421fc" strokeWidth="1.5"/><path d="M8 5v3l2 2" stroke="#7421fc" strokeWidth="1.5" strokeLinecap="round"/></svg> },
-  { id: 'ux', name: 'UX Design',
-    icon: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2.5" stroke="#7421fc" strokeWidth="1.5"/><circle cx="8" cy="7" r="2" fill="#7421fc" opacity=".4"/><path d="M5 13c0-1.7 1.3-3 3-3s3 1.3 3 3" stroke="#7421fc" strokeWidth="1.5" strokeLinecap="round"/></svg> },
-  { id: 'code', name: 'Programacion',
-    icon: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M5 5l-3 3 3 3M11 5l3 3-3 3M9.5 3l-3 10" stroke="#7421fc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+  {
+    id: 'marketing', name: 'Marketing Digital',
+    icon: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="#7421fc" strokeWidth="1.5"/><path d="M8 5v3l2 2" stroke="#7421fc" strokeWidth="1.5" strokeLinecap="round"/></svg>
+  },
+  {
+    id: 'ux', name: 'UX & UI',
+    icon: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2.5" stroke="#7421fc" strokeWidth="1.5"/><circle cx="8" cy="7" r="2" fill="#7421fc" opacity=".4"/><path d="M5 13c0-1.7 1.3-3 3-3s3 1.3 3 3" stroke="#7421fc" strokeWidth="1.5" strokeLinecap="round"/></svg>
+  },
+  {
+    id: 'social', name: 'Social & Ads',
+    icon: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="4" cy="8" r="1.5" fill="#7421fc"/><circle cx="12" cy="4" r="1.5" fill="#7421fc" opacity=".6"/><circle cx="12" cy="12" r="1.5" fill="#7421fc" opacity=".6"/><path d="M5.5 7.5l5-3M5.5 8.5l5 3" stroke="#7421fc" strokeWidth="1.2" strokeLinecap="round"/></svg>
+  },
+  {
+    id: 'frontend', name: 'Frontend',
+    icon: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M5 5l-3 3 3 3M11 5l3 3-3 3M9.5 3l-3 10" stroke="#7421fc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+  },
+  {
+    id: 'seo', name: 'SEO',
+    icon: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#7421fc" strokeWidth="1.5"/><path d="M11 11l3 3" stroke="#7421fc" strokeWidth="1.5" strokeLinecap="round"/></svg>
+  },
+  {
+    id: 'copy', name: 'Copywriting',
+    icon: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 4.5h10M3 8h6.5M3 11.5h4" stroke="#7421fc" strokeWidth="1.5" strokeLinecap="round"/></svg>
+  },
+  {
+    id: 'ia', name: 'Inteligencia Artificial',
+    icon: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" fill="#7421fc" opacity=".4"/><circle cx="8" cy="8" r="6" stroke="#7421fc" strokeWidth="1.2" strokeDasharray="2.5 1.5"/><circle cx="8" cy="2" r="1" fill="#7421fc"/><circle cx="8" cy="14" r="1" fill="#7421fc"/><circle cx="2" cy="8" r="1" fill="#7421fc"/><circle cx="14" cy="8" r="1" fill="#7421fc"/></svg>
+  },
 ]
 
 export default function Logros() {
