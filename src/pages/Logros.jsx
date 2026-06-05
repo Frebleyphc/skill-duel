@@ -130,13 +130,13 @@ export default function Logros() {
         <div className={styles.streakCard}>
           <div className={styles.streakNum}>{profile?.current_streak || 0}</div>
           <div>
-            <div className={styles.streakLabel}>Dias seguidos</div>
-            <div className={styles.streakTitle}>
-              {profile?.current_streak >= 3 ? 'Racha de fuego' : 'Sin racha activa'}
-            </div>
-            <div className={styles.streakSub}>
-              {profile?.current_streak >= 1 ? 'Juega hoy para mantenerla' : 'Juega un duelo para empezar'}
-            </div>
+            <div className={styles.streakLabel}>Victorias seguidas</div>
+<div className={styles.streakTitle}>
+  {profile?.current_streak >= 3 ? 'Racha de fuego' : profile?.current_streak >= 1 ? 'Racha activa' : 'Sin racha'}
+</div>
+<div className={styles.streakSub}>
+  {profile?.current_streak >= 1 ? 'Sigue ganando para aumentarla' : 'Gana un duelo para empezar'}
+</div>
           </div>
           {profile?.current_streak >= 3 && (
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style={{ marginLeft:'auto' }}>
