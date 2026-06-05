@@ -16,7 +16,25 @@ const QUESTION_FALLBACK = [
   { question: '¿Que es el prompting?', option_a: 'Programar', option_b: 'Guiar una IA con instrucciones', option_c: 'Entrenar modelos', option_d: 'Disenar redes', correct: 1 },
 ]
 
-const RIVAL   = { name: 'Carlos M.', init: 'CM', bg: '#c0392b' }
+const SEED_PLAYERS = [
+  { name: 'Karla Rios',     init: 'KR', bg: '#c8930a' },
+  { name: 'Diego Mendoza',  init: 'DM', bg: '#5a18c7' },
+  { name: 'Lucia Torres',   init: 'LT', bg: '#0f6e56' },
+  { name: 'Andres Riva',    init: 'AR', bg: '#c0392b' },
+  { name: 'Sofia Castro',   init: 'SC', bg: '#6c3483' },
+  { name: 'Paulo Milla',    init: 'PM', bg: '#2e86c1' },
+  { name: 'Valeria Chavez', init: 'VC', bg: '#a04000' },
+  { name: 'Bruno Quiroz',   init: 'BQ', bg: '#1a5276' },
+  { name: 'Nadia Flores',   init: 'NF', bg: '#117a65' },
+  { name: 'Miguel Alva',    init: 'MA', bg: '#7d6608' },
+  { name: 'Camila Zapata',  init: 'CZ', bg: '#4a235a' },
+  { name: 'Rodrigo Paz',    init: 'RP', bg: '#1b2631' },
+  { name: 'Daniela Vega',   init: 'DV', bg: '#784212' },
+  { name: 'Sebastian Mora', init: 'SM', bg: '#0e6251' },
+  { name: 'Alejandra Diaz', init: 'AD', bg: '#1a5276' },
+]
+
+const RIVAL = SEED_PLAYERS[Math.floor(Math.random() * SEED_PLAYERS.length)]
 const LETTERS = ['A', 'B', 'C', 'D']
 const SCREEN  = { MM: 'mm', DUEL: 'duel', RESULT: 'result' }
 const TOTAL_Q = 5
