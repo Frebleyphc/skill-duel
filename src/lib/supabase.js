@@ -107,3 +107,39 @@ export async function getRankingByCategory(category, limit = 20) {
   if (error) { console.error(error); return [] }
   return data || []
 }
+/* ── MATCHMAKING QUEUE ──────────────────────────────────── */
+export async function joinQueue(userId, category) {
+  // Limpiar entrada previa del mismo usuario
+  await supabase
+    .from('matchmaking_queue')
+    .delete()
+    .eq('user_id', userId)
+
+  // Agregar a la cola
+  const { data, error } = await supabase
+    .from('matchmaking_queue')
+    .insert({ user_id: userId, category })
+    .select()
+    .single()
+  if (error) { console.error(error); return null }
+  return data
+}
+
+export async function findOpponent(userId, category) {
+  const { data, error } = await supabase
+    .from('matchmaking_queue')
+    .select('*, profiles(full_name, avatar_initials)')
+    .eq('category', category)
+    .neq('user_id', userId)
+    .order('created_at', { ascending: true })
+    .limit(1)
+  if (error) { console.error(error); return null }
+  return data?.[0] || null
+}
+
+export async function leaveQueue(userId) {
+  await supabase
+    .from('matchmaking_queue')
+    .delete()
+    .eq('user_id', userId)
+}

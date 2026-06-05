@@ -4,9 +4,8 @@ import { Trophy, AlertCircle } from 'lucide-react'
 import TopNav    from '../components/layout/TopNav'
 import BottomNav from '../components/layout/BottomNav'
 import styles    from './Matchmaking.module.css'
-import { getRandomQuestions, updateStatsAfterDuel, saveDuel } from '../lib/supabase'
+import { getRandomQuestions, updateStatsAfterDuel, saveDuel, joinQueue, findOpponent, leaveQueue } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-
 
 const QUESTION_FALLBACK = [
   { question: '¿Que es el marketing de contenidos?', option_a: 'Pagar anuncios', option_b: 'Crear contenido valioso', option_c: 'Enviar emails', option_d: 'Comprar seguidores', correct: 1 },
@@ -32,7 +31,8 @@ const SEED_PLAYERS = [
   { name: 'Daniela Vega',   init: 'DV', bg: '#784212' },
   { name: 'Sebastian Mora', init: 'SM', bg: '#0e6251' },
   { name: 'Alejandra Diaz', init: 'AD', bg: '#1a5276' },
-] 
+]
+
 const LETTERS = ['A', 'B', 'C', 'D']
 const SCREEN  = { MM: 'mm', DUEL: 'duel', RESULT: 'result' }
 const TOTAL_Q = 5
@@ -44,11 +44,10 @@ export default function Matchmaking() {
   const cat                          = searchParams.get('cat') || 'Marketing Digital'
 
   const [screen, setScreen]          = useState(SCREEN.MM)
-  const [mmStatus, setMmStatus]      = useState('Conectando con jugadores activos...')
+  const [mmStatus, setMmStatus]      = useState('Buscando rival...')
   const [rivalFound, setRivalFound]  = useState(false)
   const [qs, setQs]                  = useState([])
   const [loadingQs, setLoadingQs]    = useState(true)
-
   const [qIndex, setQIndex]          = useState(0)
   const [scoreYou, setScoreYou]      = useState(0)
   const [scoreOpp, setScoreOpp]      = useState(0)
@@ -58,29 +57,73 @@ export default function Matchmaking() {
   const [toast, setToast]            = useState(null)
   const [bgState, setBgState]        = useState('neutral')
   const [history, setHistory]        = useState([])
-  const [rival] = useState(
-  () => SEED_PLAYERS[Math.floor(Math.random() * SEED_PLAYERS.length)]
-)
-  const timerRef = useRef(null)
+  const [rival, setRival]            = useState(null)
+
+  const timerRef     = useRef(null)
+  const queueRef     = useRef(null)
+  const searchingRef = useRef(true)
 
   /* ── CARGAR PREGUNTAS ─────────────────────────────────── */
   useEffect(() => {
-  getRandomQuestions(cat, 5).then(data => {
-    if (data && data.length >= 5) {
-      setQs(data)
-    } else {
-      setQs(QUESTION_FALLBACK)
-    }
-    setLoadingQs(false)
-  })
-}, [cat])
+    getRandomQuestions(cat, 5).then(data => {
+      setQs(data && data.length >= 5 ? data : QUESTION_FALLBACK)
+      setLoadingQs(false)
+    })
+  }, [cat])
 
-  /* ── MATCHMAKING ──────────────────────────────────────── */
+  /* ── MATCHMAKING CON BUSQUEDA REAL ────────────────────── */
   useEffect(() => {
-    const t1 = setTimeout(() => { setMmStatus('Rival encontrado. Preparando duelo...'); setRivalFound(true) }, 2200)
-    const t2 = setTimeout(() => setScreen(SCREEN.DUEL), 3800)
-    return () => { clearTimeout(t1); clearTimeout(t2) }
-  }, [])
+    if (!user) return
+
+    async function startSearch() {
+      await joinQueue(user.id, cat)
+      setMmStatus('Buscando rival...')
+
+      let elapsed = 0
+      const SEARCH_INTERVAL = 2000
+      const MAX_WAIT = 5000
+
+      queueRef.current = setInterval(async () => {
+        elapsed += SEARCH_INTERVAL
+
+        const opponent = await findOpponent(user.id, cat)
+
+        if (opponent) {
+          clearInterval(queueRef.current)
+          searchingRef.current = false
+          await leaveQueue(user.id)
+          setRival({
+            name: opponent.profiles?.full_name || 'Rival',
+            init: opponent.profiles?.avatar_initials || '??',
+            bg: '#7421fc',
+            isReal: true
+          })
+          setMmStatus('Rival encontrado.')
+          setRivalFound(true)
+          setTimeout(() => setScreen(SCREEN.DUEL), 1500)
+          return
+        }
+
+        if (elapsed >= MAX_WAIT) {
+          clearInterval(queueRef.current)
+          searchingRef.current = false
+          await leaveQueue(user.id)
+          const seedRival = SEED_PLAYERS[Math.floor(Math.random() * SEED_PLAYERS.length)]
+          setRival(seedRival)
+          setMmStatus('Rival encontrado.')
+          setRivalFound(true)
+          setTimeout(() => setScreen(SCREEN.DUEL), 1500)
+        }
+      }, SEARCH_INTERVAL)
+    }
+
+    startSearch()
+
+    return () => {
+      if (queueRef.current) clearInterval(queueRef.current)
+      if (searchingRef.current) leaveQueue(user?.id)
+    }
+  }, [user, cat])
 
   /* ── TIMER ────────────────────────────────────────────── */
   useEffect(() => {
@@ -94,7 +137,7 @@ export default function Matchmaking() {
     return () => clearInterval(timerRef.current)
   }, [screen, qIndex, answered])
 
-  /* ── RIVAL ────────────────────────────────────────────── */
+  /* ── RIVAL RESPONDE ───────────────────────────────────── */
   useEffect(() => {
     if (screen !== SCREEN.DUEL || answered) return
     const t = setTimeout(() => {
@@ -129,30 +172,24 @@ export default function Matchmaking() {
   }
 
   /* ── NEXT ─────────────────────────────────────────────── */
-function handleNext() {
-  setBgState('neutral')
-  if (qIndex + 1 >= qs.length) {
-    const won     = scoreYou >= scoreOpp
-    const xpEarned = won ? 180 : 60
-    if (user) {
-      saveDuel({
-        playerOneId: user.id,
-        category:    cat,
-        scoreOne:    scoreYou,
-        scoreTwo:    scoreOpp,
-        winnerId:    won ? user.id : null
-      })
-      updateStatsAfterDuel(user.id, won, xpEarned)
+  function handleNext() {
+    setBgState('neutral')
+    if (qIndex + 1 >= qs.length) {
+      const won      = scoreYou >= scoreOpp
+      const xpEarned = won ? 180 : 60
+      if (user) {
+        saveDuel({ playerOneId: user.id, category: cat, scoreOne: scoreYou, scoreTwo: scoreOpp, winnerId: won ? user.id : null })
+        updateStatsAfterDuel(user.id, won, xpEarned)
+      }
+      setScreen(SCREEN.RESULT)
+      return
     }
-    setScreen(SCREEN.RESULT)
-    return
+    setQIndex(i => i + 1)
+    setAnswered(false)
+    setChosen(null)
+    setToast(null)
+    setTimeLeft(12)
   }
-  setQIndex(i => i + 1)
-  setAnswered(false)
-  setChosen(null)
-  setToast(null)
-  setTimeLeft(12)
-}
 
   /* ── OPT CLASS ────────────────────────────────────────── */
   function optClass(i) {
@@ -187,15 +224,20 @@ function handleNext() {
             <p className={styles.mmSub}>{mmStatus}</p>
             <div className={styles.arena}>
               <div className={styles.fighter}>
-                <div className={`${styles.fAv} ${styles.fAvYou}`}>JR</div>
+                <div className={`${styles.fAv} ${styles.fAvYou}`}>
+                  {user?.user_metadata?.full_name?.charAt(0) || 'JR'}
+                </div>
                 <span className={styles.fName}>Tu</span>
               </div>
               <div className={styles.vsBadge}>VS</div>
               <div className={styles.fighter}>
                 <div className={`${styles.fAv} ${rivalFound ? styles.fAvFound : styles.fAvOpp}`}>
-                  {rivalFound ? rival.init : <span className={styles.dots}><span/><span/><span/></span>}
+                  {rivalFound
+                    ? (rival?.init || '?')
+                    : <span className={styles.dots}><span/><span/><span/></span>
+                  }
                 </div>
-                <span className={styles.fName}>{rivalFound ? rival.name : 'Buscando...'}</span>
+                <span className={styles.fName}>{rivalFound ? (rival?.name || 'Rival') : 'Buscando...'}</span>
               </div>
             </div>
             <div className={styles.mmCatCard}>
@@ -212,7 +254,9 @@ function handleNext() {
 
           <div className={styles.duelTop}>
             <div className={styles.playerBlock}>
-              <div className={styles.playerAv} style={{ background: '#7421fc' }}>JR</div>
+              <div className={styles.playerAv} style={{ background: '#7421fc' }}>
+                {user?.user_metadata?.full_name?.charAt(0) || 'JR'}
+              </div>
               <div className={styles.playerName}>Tu</div>
               <div className={styles.playerScore}>{scoreYou}</div>
             </div>
@@ -223,8 +267,10 @@ function handleNext() {
               <div className={styles.timerLabel}>seg</div>
             </div>
             <div className={styles.playerBlock} style={{ alignItems: 'flex-end' }}>
-              <div className={styles.playerAv} style={{ background: rival.bg }}>{rival.init}</div>
-              <div className={styles.playerName}>{rival.name}</div>
+              <div className={styles.playerAv} style={{ background: rival?.bg || '#1b1b1b' }}>
+                {rival?.init || '?'}
+              </div>
+              <div className={styles.playerName}>{rival?.name || 'Rival'}</div>
               <div className={styles.playerScore}>{scoreOpp}</div>
             </div>
           </div>
@@ -298,7 +344,7 @@ function handleNext() {
                 <div className={styles.rscOk}>{Math.round(scoreYou / 200)}/5 correctas</div>
               </div>
               <div className={`${styles.rsc} ${!win ? styles.rscWinner : ''}`}>
-                <div className={styles.rscName}>{rival.name}</div>
+                <div className={styles.rscName}>{rival?.name || 'Rival'}</div>
                 <div className={styles.rscPts}>{scoreOpp}</div>
                 <div className={styles.rscOk}>{Math.round(scoreOpp / 200)}/5 correctas</div>
               </div>
@@ -308,7 +354,7 @@ function handleNext() {
               <div className={styles.xpNum}>+{win ? 180 : 60} XP</div>
               <div>
                 <div className={styles.xpLabel}>Experiencia ganada</div>
-                <div className={styles.xpSub}>{win ? 'Racha: 3 victorias seguidas' : 'Sigue jugando para subir'}</div>
+                <div className={styles.xpSub}>{win ? 'Racha de victorias activa' : 'Sigue jugando para subir'}</div>
               </div>
             </div>
 
