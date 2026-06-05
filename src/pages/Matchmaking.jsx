@@ -32,9 +32,7 @@ const SEED_PLAYERS = [
   { name: 'Daniela Vega',   init: 'DV', bg: '#784212' },
   { name: 'Sebastian Mora', init: 'SM', bg: '#0e6251' },
   { name: 'Alejandra Diaz', init: 'AD', bg: '#1a5276' },
-]
-
-const RIVAL = SEED_PLAYERS[Math.floor(Math.random() * SEED_PLAYERS.length)]
+] 
 const LETTERS = ['A', 'B', 'C', 'D']
 const SCREEN  = { MM: 'mm', DUEL: 'duel', RESULT: 'result' }
 const TOTAL_Q = 5
@@ -60,7 +58,9 @@ export default function Matchmaking() {
   const [toast, setToast]            = useState(null)
   const [bgState, setBgState]        = useState('neutral')
   const [history, setHistory]        = useState([])
-
+  const [rival] = useState(
+  () => SEED_PLAYERS[Math.floor(Math.random() * SEED_PLAYERS.length)]
+)
   const timerRef = useRef(null)
 
   /* ── CARGAR PREGUNTAS ─────────────────────────────────── */
@@ -193,9 +193,9 @@ function handleNext() {
               <div className={styles.vsBadge}>VS</div>
               <div className={styles.fighter}>
                 <div className={`${styles.fAv} ${rivalFound ? styles.fAvFound : styles.fAvOpp}`}>
-                  {rivalFound ? RIVAL.init : <span className={styles.dots}><span/><span/><span/></span>}
+                  {rivalFound ? rival.init : <span className={styles.dots}><span/><span/><span/></span>}
                 </div>
-                <span className={styles.fName}>{rivalFound ? RIVAL.name : 'Buscando...'}</span>
+                <span className={styles.fName}>{rivalFound ? rival.name : 'Buscando...'}</span>
               </div>
             </div>
             <div className={styles.mmCatCard}>
@@ -223,8 +223,8 @@ function handleNext() {
               <div className={styles.timerLabel}>seg</div>
             </div>
             <div className={styles.playerBlock} style={{ alignItems: 'flex-end' }}>
-              <div className={styles.playerAv} style={{ background: RIVAL.bg }}>{RIVAL.init}</div>
-              <div className={styles.playerName}>{RIVAL.name}</div>
+              <div className={styles.playerAv} style={{ background: rival.bg }}>{rival.init}</div>
+              <div className={styles.playerName}>{rival.name}</div>
               <div className={styles.playerScore}>{scoreOpp}</div>
             </div>
           </div>
@@ -298,7 +298,7 @@ function handleNext() {
                 <div className={styles.rscOk}>{Math.round(scoreYou / 200)}/5 correctas</div>
               </div>
               <div className={`${styles.rsc} ${!win ? styles.rscWinner : ''}`}>
-                <div className={styles.rscName}>{RIVAL.name}</div>
+                <div className={styles.rscName}>{rival.name}</div>
                 <div className={styles.rscPts}>{scoreOpp}</div>
                 <div className={styles.rscOk}>{Math.round(scoreOpp / 200)}/5 correctas</div>
               </div>
