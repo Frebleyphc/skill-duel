@@ -182,7 +182,7 @@ export default function Perfil() {
           </div>
           <div>
             <div className={styles.artivaLabel}>Potencia tu perfil</div>
-            <div className={styles.artivaTitle}>Ver cursos recomendados en Artiva</div>
+            <div className={styles.artivaTitle}>Ver cursos recomendados en Artiva Latam</div>
           </div>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ marginLeft:'auto', flexShrink:0 }}>
             <path d="M6 4l4 4-4 4" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
