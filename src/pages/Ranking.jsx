@@ -7,10 +7,10 @@ import BottomNav     from '../components/layout/BottomNav'
 import styles        from './Ranking.module.css'
 
 const TABS = [
-  { key: 'global', label: 'Global' },
+  { key: 'global',    label: 'Global'    },
   { key: 'marketing', label: 'Marketing' },
-  { key: 'ux', label: 'UX' },
-  { key: 'data', label: 'Data' },
+  { key: 'ux',        label: 'UX & UI'   },
+  { key: 'social',    label: 'Social'    },
 ]
 
 const medalClass = { 1: styles.posGold, 2: styles.posSilver, 3: styles.posBronze }
