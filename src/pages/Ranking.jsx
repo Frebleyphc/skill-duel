@@ -93,7 +93,12 @@ export default function Ranking() {
         </div>
 
         {/* TABS con scroll horizontal */}
-        <div style={{ overflowX:'auto', padding:'16px 20px 0' }}>
+        <div style={{ 
+  overflowX:'auto', 
+  padding:'16px 20px 0',
+  scrollbarWidth:'none',
+  msOverflowStyle:'none',
+}}>
           <div style={{ display:'flex', gap:'6px', width:'max-content' }}>
             {TABS.map(t => (
               <button

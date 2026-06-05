@@ -73,3 +73,5 @@
 .wr    { font-size: 11px; color: var(--hint); margin-top: 1px; font-weight: 400; }
 
 .separator { height: 0.5px; background: var(--border); }
+/* ocultar scrollbar del tab strip */
+.content div::-webkit-scrollbar { display: none; }
