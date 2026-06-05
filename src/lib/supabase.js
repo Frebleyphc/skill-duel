@@ -97,3 +97,13 @@ export async function getDuelHistory(userId, limit = 10) {
   if (error) { console.error(error); return [] }
   return data || []
 }
+export async function getRankingByCategory(category, limit = 20) {
+  const { data, error } = await supabase
+    .from('ranking_by_category')
+    .select('*')
+    .eq('category', category)
+    .order('position', { ascending: true })
+    .limit(limit)
+  if (error) { console.error(error); return [] }
+  return data || []
+}
