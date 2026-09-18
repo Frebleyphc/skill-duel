@@ -96,7 +96,7 @@ export default function Login() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>Contrasena</label>
+            <label className={styles.label}>Contraseña</label>
             <input
               className={styles.input}
               type="password"
