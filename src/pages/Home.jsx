@@ -1,51 +1,56 @@
 import { useState, useEffect } from 'react'
 import { Link }    from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { getProfile } from '../lib/supabase'
+import { getProfile, getCategoryStats } from '../lib/supabase'
 import TopNav      from '../components/layout/TopNav'
 import BottomNav   from '../components/layout/BottomNav'
 import styles      from './Home.module.css'
 
 const CATEGORIES = [
   {
-    id: 'marketing', slug: 'Marketing Digital', name: 'Marketing Digital',
-    count: '247 jugadores activos', featured: true,
+    id: 'marketing', slug: 'Marketing Digital', name: 'Marketing Digital', featured: true,
     icon: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5"/><path d="M10 6v4l2.5 2.5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/></svg>,
   },
   {
-    id: 'ux', slug: 'UX & UI', name: 'UX & UI', count: '134 jugadores',
+    id: 'ux', slug: 'UX & UI', name: 'UX & UI',
     icon: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="3.5" stroke="#7421fc" strokeWidth="1.5"/><circle cx="10" cy="9" r="2.5" fill="#7421fc" opacity=".4"/><path d="M5 16c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="#7421fc" strokeWidth="1.5" strokeLinecap="round"/></svg>,
   },
   {
-    id: 'social', slug: 'Social & Ads', name: 'Social & Ads', count: '189 jugadores',
+    id: 'social', slug: 'Social & Ads', name: 'Social & Ads',
     icon: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="6" cy="10" r="2" fill="#7421fc"/><circle cx="14" cy="5" r="2" fill="#7421fc" opacity=".6"/><circle cx="14" cy="15" r="2" fill="#7421fc" opacity=".6"/><path d="M8 9l4-3M8 11l4 3" stroke="#7421fc" strokeWidth="1.5" strokeLinecap="round"/></svg>,
   },
   {
-    id: 'frontend', slug: 'Programacion Frontend', name: 'Frontend', count: '156 jugadores',
+    id: 'frontend', slug: 'Programacion Frontend', name: 'Frontend',
     icon: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6.5 6.5l-4 3.5 4 3.5M13.5 6.5l4 3.5-4 3.5M11 4l-2 12" stroke="#7421fc" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   },
   {
-    id: 'seo', slug: 'SEO', name: 'SEO', count: '98 jugadores',
+    id: 'seo', slug: 'SEO', name: 'SEO',
     icon: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.5" stroke="#7421fc" strokeWidth="1.8"/><path d="M13 13l4 4" stroke="#7421fc" strokeWidth="1.8" strokeLinecap="round"/></svg>,
   },
   {
-    id: 'copy', slug: 'Copywriting', name: 'Copywriting', count: '76 jugadores',
+    id: 'copy', slug: 'Copywriting', name: 'Copywriting',
     icon: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3.5 5.5h13M3.5 10h8.5M3.5 14.5h5.5" stroke="#7421fc" strokeWidth="1.8" strokeLinecap="round"/></svg>,
   },
   {
-    id: 'ia', slug: 'Inteligencia Artificial', name: 'Inteligencia Artificial', count: '312 jugadores',
+    id: 'ia', slug: 'Inteligencia Artificial', name: 'Inteligencia Artificial',
     icon: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="3" fill="#7421fc" opacity=".4"/><circle cx="10" cy="10" r="7" stroke="#7421fc" strokeWidth="1.5" strokeDasharray="3 2"/><circle cx="10" cy="3" r="1.5" fill="#7421fc"/><circle cx="10" cy="17" r="1.5" fill="#7421fc"/><circle cx="3" cy="10" r="1.5" fill="#7421fc"/><circle cx="17" cy="10" r="1.5" fill="#7421fc"/></svg>,
   },
 ]
 
-function CategoryCard({ cat }) {
+function playedLabel(stat) {
+  if (!stat || !stat.duels_played) return 'Sin jugar aun'
+  return `${stat.duels_played} ${stat.duels_played === 1 ? 'duelo' : 'duelos'} · ${stat.duels_won} ganados`
+}
+
+function CategoryCard({ cat, stat }) {
+  const count = playedLabel(stat)
   if (cat.featured) {
     return (
       <Link to={`/jugar?cat=${encodeURIComponent(cat.slug)}`} className={`${styles.cat} ${styles.catFeatured}`}>
         <div className={`${styles.catIcon} ${styles.catIconFeatured}`}>{cat.icon}</div>
         <div>
           <div className={styles.catName}>{cat.name}</div>
-          <div className={styles.catCount}>{cat.count}</div>
+          <div className={styles.catCount}>{count}</div>
         </div>
         <span className={styles.hotBadge}>Hot</span>
       </Link>
@@ -55,7 +60,7 @@ function CategoryCard({ cat }) {
     <Link to={`/jugar?cat=${encodeURIComponent(cat.slug)}`} className={styles.cat}>
       <div className={styles.catIcon}>{cat.icon}</div>
       <div className={styles.catName}>{cat.name}</div>
-      <div className={styles.catCount}>{cat.count}</div>
+      <div className={styles.catCount}>{count}</div>
     </Link>
   )
 }
@@ -63,10 +68,13 @@ function CategoryCard({ cat }) {
 export default function Home() {
   const { user }            = useAuth()
   const [profile, setProfile] = useState(null)
+  const [catStats, setCatStats] = useState({})
 
   useEffect(() => {
     if (!user) return
     getProfile(user.id).then(setProfile)
+    getCategoryStats(user.id).then(rows =>
+      setCatStats(Object.fromEntries(rows.map(r => [r.category, r]))))
   }, [user])
 
   const winRate = profile?.duels_played > 0
@@ -110,7 +118,7 @@ export default function Home() {
           </div>
         </div>
         <div className={styles.cats}>
-          {CATEGORIES.map(cat => <CategoryCard key={cat.id} cat={cat} />)}
+          {CATEGORIES.map(cat => <CategoryCard key={cat.id} cat={cat} stat={catStats[cat.slug]} />)}
         </div>
 
         <div className={styles.sec}>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link }        from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
-import { supabase, getProfile, getDuelHistory } from '../lib/supabase'
+import { supabase, getProfile, getDuelHistory, getCategoryStats } from '../lib/supabase'
 import { useAuth }     from '../hooks/useAuth'
 import TopNav          from '../components/layout/TopNav'
 import BottomNav       from '../components/layout/BottomNav'
@@ -23,6 +23,7 @@ export default function Perfil() {
   const [profile, setProfile]   = useState(null)
   const [loading, setLoading]   = useState(true)
   const [duelHistory, setDuelHistory] = useState([])
+  const [catStats, setCatStats] = useState([])
 
   useEffect(() => {
     if (!user) return
@@ -31,6 +32,8 @@ export default function Perfil() {
       setLoading(false) 
     })
     getDuelHistory(user.id, 10).then(setDuelHistory)
+    getCategoryStats(user.id).then(rows =>
+      setCatStats(rows.filter(r => r.duels_played > 0).sort((a, b) => b.xp - a.xp)))
   }, [user])
 
   async function handleLogout() {
@@ -109,12 +112,30 @@ export default function Perfil() {
           <div className={styles.panel}>
             <div className={styles.sec}>
               <div className={styles.secHeader}>
-                <span className={styles.secTitle}>Sin skills aun</span>
+                <span className={styles.secTitle}>{catStats.length ? 'Tus skills' : 'Sin skills aun'}</span>
               </div>
             </div>
-            <p style={{ padding:'0 20px 20px', fontSize:'13px', color:'var(--muted)' }}>
-              Juega duelos para desbloquear estadisticas por categoria.
-            </p>
+            {catStats.length === 0 ? (
+              <p style={{ padding:'0 20px 20px', fontSize:'13px', color:'var(--muted)' }}>
+                Juega duelos para desbloquear estadisticas por categoria.
+              </p>
+            ) : (
+              <div className={styles.hList}>
+                {catStats.map(c => (
+                  <div key={c.category} className={styles.hRow}>
+                    <div className={styles.hInfo}>
+                      <div className={styles.hCat}>{c.category}</div>
+                      <div className={styles.hOpp}>
+                        {c.duels_won}/{c.duels_played} ganados · {Math.round((c.duels_won / c.duels_played) * 100)}% win rate
+                      </div>
+                    </div>
+                    <div className={styles.hRight}>
+                      <div className={styles.hScore}>{c.xp} xp</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -141,6 +162,7 @@ export default function Perfil() {
               <div className={styles.hInfo}>
                 <div className={styles.hCat}>{h.category}</div>
                 <div className={styles.hOpp}>
+                  {h.opponent_name ? `vs ${h.opponent_name} · ` : ''}
                   {new Date(h.played_at).toLocaleDateString('es-PE', {
                     day: 'numeric', month: 'short', year: 'numeric'
                   })}

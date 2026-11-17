@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link }      from 'react-router-dom'
 import { useAuth }   from '../hooks/useAuth'
-import { getProfile } from '../lib/supabase'
+import { getProfile, getCategoryStats } from '../lib/supabase'
 import TopNav        from '../components/layout/TopNav'
 import BottomNav     from '../components/layout/BottomNav'
 import styles        from './Logros.module.css'
@@ -53,7 +53,7 @@ const CAT_PROGRESS = [
     icon: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="4" cy="8" r="1.5" fill="#7421fc"/><circle cx="12" cy="4" r="1.5" fill="#7421fc" opacity=".6"/><circle cx="12" cy="12" r="1.5" fill="#7421fc" opacity=".6"/><path d="M5.5 7.5l5-3M5.5 8.5l5 3" stroke="#7421fc" strokeWidth="1.2" strokeLinecap="round"/></svg>
   },
   {
-    id: 'frontend', name: 'Frontend',
+    id: 'frontend', name: 'Frontend', slug: 'Programacion Frontend',
     icon: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M5 5l-3 3 3 3M11 5l3 3-3 3M9.5 3l-3 10" stroke="#7421fc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
   },
   {
@@ -74,6 +74,7 @@ export default function Logros() {
   const { user }              = useAuth()
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [catStats, setCatStats] = useState({})
 
   useEffect(() => {
     if (!user) return
@@ -81,6 +82,8 @@ export default function Logros() {
       setProfile(data)
       setLoading(false)
     })
+    getCategoryStats(user.id).then(rows =>
+      setCatStats(Object.fromEntries(rows.map(r => [r.category, r]))))
   }, [user])
 
   const earnedCount = ALL_BADGES.filter(b => b.earned(profile)).length
@@ -169,22 +172,31 @@ export default function Logros() {
         {/* CAT PROGRESS */}
         <div className={styles.sec}>
           <div className={styles.secHeader}>
-            <span className={styles.secTitle}>Progreso por categoria</span>
+            <span className={styles.secTitle}>Win rate por categoria</span>
           </div>
         </div>
         <div className={styles.cpList}>
-          {CAT_PROGRESS.map(c => (
-            <div key={c.id} className={styles.cpRow}>
-              <div className={styles.cpIcon}>{c.icon}</div>
-              <div className={styles.cpInfo}>
-                <div className={styles.cpName}>{c.name}</div>
-                <div className={styles.cpBar}>
-                  <div className={styles.cpFill} style={{ width:'0%' }}/>
+          {CAT_PROGRESS.map(c => {
+            const st  = catStats[c.slug || c.name]
+            const pct = st?.duels_played ? Math.round((st.duels_won / st.duels_played) * 100) : 0
+            return (
+              <div key={c.id} className={styles.cpRow}>
+                <div className={styles.cpIcon}>{c.icon}</div>
+                <div className={styles.cpInfo}>
+                  <div className={styles.cpName}>{c.name}</div>
+                  <div className={styles.cpBar}>
+                    <div className={styles.cpFill} style={{ width:`${pct}%` }}/>
+                  </div>
+                  <div style={{ fontSize:'11px', color:'var(--hint)', marginTop:'4px' }}>
+                    {st?.duels_played
+                      ? `${st.duels_won}/${st.duels_played} ganados · ${st.xp} xp`
+                      : 'Sin jugar aun'}
+                  </div>
                 </div>
+                <div className={styles.cpPct}>{st?.duels_played ? `${pct}%` : '—'}</div>
               </div>
-              <div className={styles.cpPct}>0%</div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
       </main>

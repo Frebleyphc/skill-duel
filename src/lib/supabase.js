@@ -80,6 +80,15 @@ export async function getDuelHistory(userId, limit = 10) {
   if (error) { console.error(error); return [] }
   return data || []
 }
+// Estadisticas por categoria del usuario: [{ category, duels_played, duels_won, xp }]
+export async function getCategoryStats(userId) {
+  const { data, error } = await supabase
+    .from('category_stats')
+    .select('category, duels_played, duels_won, xp')
+    .eq('user_id', userId)
+  if (error) { console.error(error); return [] }
+  return data || []
+}
 export async function getRankingByCategory(category, limit = 20) {
   const { data, error } = await supabase
     .from('ranking_by_category')
