@@ -45,46 +45,29 @@ export async function getRanking(limit = 20) {
 }
 
 /* ── DUELOS ─────────────────────────────────────────────── */
-export async function saveDuel({ playerOneId, category, scoreOne, scoreTwo, winnerId }) {
-  const { data, error } = await supabase
-    .from('duels')
-    .insert({
-      player_one: playerOneId,
-      player_two: playerOneId, // por ahora mismo usuario hasta tener matchmaking real
-      category,
-      score_one: scoreOne,
-      score_two: scoreTwo,
-      winner: winnerId
-    })
-    .select()
-    .single()
-  if (error) console.error(error)
-  return data
-}
-
-export async function updateStatsAfterDuel(userId, won, xpEarned) {
-  const profile = await getProfile(userId)
-  if (!profile) return
-
-  await updateProfile(userId, {
-    duels_played:   profile.duels_played + 1,
-    duels_won:      profile.duels_won + (won ? 1 : 0),
-    xp:             profile.xp + xpEarned,
-    current_streak: won ? profile.current_streak + 1 : 0,
-    level:          Math.floor((profile.xp + xpEarned) / 500) + 1
+// Guarda el duelo (contra bot) y suma duelos, victorias, XP, racha, nivel y
+// estadisticas por categoria en el servidor, de forma atomica (funcion finish_duel).
+// Devuelve { data, error }. En exito, data = { duel_id, won, xp_earned, new_xp, new_level, new_streak }
+export async function finishDuel({ category, scoreOne, scoreTwo, opponentName }) {
+  const { data, error } = await supabase.rpc('finish_duel', {
+    p_category:      category,
+    p_score_one:     scoreOne,
+    p_score_two:     scoreTwo,
+    p_opponent_name: opponentName ?? null
   })
+  if (error) { console.error('finish_duel:', error); return { data: null, error } }
+  // La funcion devuelve una tabla de una sola fila
+  return { data: Array.isArray(data) ? data[0] : data, error: null }
 }
 /* ── PREGUNTAS ──────────────────────────────────────────── */
+// Preguntas al azar de TODA la categoria (el orden aleatorio lo hace la base de datos)
 export async function getRandomQuestions(category, limit = 5) {
-  const { data, error } = await supabase
-    .from('questions')
-    .select('*')
-    .eq('category', category)
-    .limit(limit * 3)
+  const { data, error } = await supabase.rpc('get_random_questions', {
+    cat: category,
+    num: limit
+  })
   if (error) { console.error('Error questions:', error); return [] }
-  if (!data || data.length === 0) return []
-  const shuffled = data.sort(() => Math.random() - 0.5)
-  return shuffled.slice(0, limit)
+  return data || []
 }
 /* ── HISTORIAL ──────────────────────────────────────────── */
 export async function getDuelHistory(userId, limit = 10) {

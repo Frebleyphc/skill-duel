@@ -4,7 +4,7 @@ import { Trophy, AlertCircle } from 'lucide-react'
 import TopNav    from '../components/layout/TopNav'
 import BottomNav from '../components/layout/BottomNav'
 import styles    from './Matchmaking.module.css'
-import { getRandomQuestions, updateStatsAfterDuel, saveDuel, joinQueue, findOpponent, leaveQueue } from '../lib/supabase'
+import { getRandomQuestions, finishDuel } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 
 const QUESTION_FALLBACK = [
@@ -58,10 +58,11 @@ export default function Matchmaking() {
   const [bgState, setBgState]        = useState('neutral')
   const [history, setHistory]        = useState([])
   const [rival, setRival]            = useState(null)
+  const [saveState, setSaveState]    = useState('idle') // 'idle' | 'saving' | 'ok' | 'error'
+  const [result, setResult]          = useState(null)
 
-  const timerRef     = useRef(null)
-  const queueRef     = useRef(null)
-  const searchingRef = useRef(true)
+  const timerRef  = useRef(null)
+  const savingRef = useRef(false)
 
   /* ── CARGAR PREGUNTAS ─────────────────────────────────── */
   useEffect(() => {
@@ -71,59 +72,19 @@ export default function Matchmaking() {
     })
   }, [cat])
 
-  /* ── MATCHMAKING CON BUSQUEDA REAL ────────────────────── */
+  /* ── MATCHMAKING (rival simulado) ─────────────────────── */
+  // Con pocos usuarios activos no se busca un rival real: tras una breve
+  // "busqueda" entra un jugador simulado de SEED_PLAYERS.
   useEffect(() => {
-    if (!user) return
-
-    async function startSearch() {
-      await joinQueue(user.id, cat)
-      setMmStatus('Buscando rival...')
-
-      let elapsed = 0
-      const SEARCH_INTERVAL = 2000
-      const MAX_WAIT = 5000
-
-      queueRef.current = setInterval(async () => {
-        elapsed += SEARCH_INTERVAL
-
-        const opponent = await findOpponent(user.id, cat)
-
-        if (opponent) {
-          clearInterval(queueRef.current)
-          searchingRef.current = false
-          await leaveQueue(user.id)
-          setRival({
-            name: opponent.profiles?.full_name || 'Rival',
-            init: opponent.profiles?.avatar_initials || '??',
-            bg: '#7421fc',
-            isReal: true
-          })
-          setMmStatus('Rival encontrado.')
-          setRivalFound(true)
-          setTimeout(() => setScreen(SCREEN.DUEL), 1500)
-          return
-        }
-
-        if (elapsed >= MAX_WAIT) {
-          clearInterval(queueRef.current)
-          searchingRef.current = false
-          await leaveQueue(user.id)
-          const seedRival = SEED_PLAYERS[Math.floor(Math.random() * SEED_PLAYERS.length)]
-          setRival(seedRival)
-          setMmStatus('Rival encontrado.')
-          setRivalFound(true)
-          setTimeout(() => setScreen(SCREEN.DUEL), 1500)
-        }
-      }, SEARCH_INTERVAL)
-    }
-
-    startSearch()
-
-    return () => {
-      if (queueRef.current) clearInterval(queueRef.current)
-      if (searchingRef.current) leaveQueue(user?.id)
-    }
-  }, [user, cat])
+    const searchMs = 2500 + Math.random() * 1500
+    const found = setTimeout(() => {
+      setRival(SEED_PLAYERS[Math.floor(Math.random() * SEED_PLAYERS.length)])
+      setMmStatus('Rival encontrado.')
+      setRivalFound(true)
+    }, searchMs)
+    const start = setTimeout(() => setScreen(SCREEN.DUEL), searchMs + 1500)
+    return () => { clearTimeout(found); clearTimeout(start) }
+  }, [cat])
 
   /* ── TIMER ────────────────────────────────────────────── */
   useEffect(() => {
@@ -171,16 +132,29 @@ export default function Matchmaking() {
     }
   }
 
+  /* ── GUARDAR RESULTADO ────────────────────────────────── */
+  // El servidor (finish_duel) guarda el duelo y suma XP, racha, nivel y categoria.
+  async function saveResult() {
+    if (savingRef.current) return
+    savingRef.current = true
+    setSaveState('saving')
+    const { data, error } = await finishDuel({
+      category: cat,
+      scoreOne: scoreYou,
+      scoreTwo: scoreOpp,
+      opponentName: rival?.name
+    })
+    savingRef.current = false
+    if (error || !data) { setSaveState('error'); return }
+    setResult(data)
+    setSaveState('ok')
+  }
+
   /* ── NEXT ─────────────────────────────────────────────── */
   function handleNext() {
     setBgState('neutral')
     if (qIndex + 1 >= qs.length) {
-      const won      = scoreYou >= scoreOpp
-      const xpEarned = won ? 180 : 60
-      if (user) {
-        saveDuel({ playerOneId: user.id, category: cat, scoreOne: scoreYou, scoreTwo: scoreOpp, winnerId: won ? user.id : null })
-        updateStatsAfterDuel(user.id, won, xpEarned)
-      }
+      saveResult()
       setScreen(SCREEN.RESULT)
       return
     }
@@ -351,12 +325,24 @@ export default function Matchmaking() {
             </div>
 
             <div className={styles.xpBlock}>
-              <div className={styles.xpNum}>+{win ? 180 : 60} XP</div>
+              <div className={styles.xpNum}>
+                {saveState === 'ok'     && `+${result.xp_earned} XP`}
+                {saveState === 'saving' && 'Guardando...'}
+                {saveState === 'error'  && '—'}
+              </div>
               <div>
                 <div className={styles.xpLabel}>Experiencia ganada</div>
-                <div className={styles.xpSub}>{win ? 'Racha de victorias activa' : 'Sigue jugando para subir'}</div>
+                <div className={styles.xpSub}>
+                  {saveState === 'error'
+                    ? 'No pudimos guardar este duelo. Revisa tu conexion.'
+                    : win ? 'Racha de victorias activa' : 'Sigue jugando para subir'}
+                </div>
               </div>
             </div>
+
+            {saveState === 'error' && (
+              <button className={styles.btnGhost} onClick={saveResult}>Reintentar guardar</button>
+            )}
 
             <div className={styles.ctaCard} onClick={() => navigate('/ranking')}>
               <div className={styles.ctaIcon}>
