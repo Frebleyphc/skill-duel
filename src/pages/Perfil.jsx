@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link }        from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
-import { supabase, getProfile, getDuelHistory, getCategoryStats } from '../lib/supabase'
+import { supabase, getProfile, updateProfile, getDuelHistory, getCategoryStats } from '../lib/supabase'
 import { useAuth }     from '../hooks/useAuth'
 import TopNav          from '../components/layout/TopNav'
 import BottomNav       from '../components/layout/BottomNav'
@@ -24,6 +24,10 @@ export default function Perfil() {
   const [loading, setLoading]   = useState(true)
   const [duelHistory, setDuelHistory] = useState([])
   const [catStats, setCatStats] = useState([])
+  const [editing, setEditing]   = useState(false)
+  const [form, setForm]         = useState({ full_name:'', handle:'', city:'', avatar_initials:'' })
+  const [saving, setSaving]     = useState(false)
+  const [editError, setEditError] = useState('')
 
   useEffect(() => {
     if (!user) return
@@ -35,6 +39,46 @@ export default function Perfil() {
     getCategoryStats(user.id).then(rows =>
       setCatStats(rows.filter(r => r.duels_played > 0).sort((a, b) => b.xp - a.xp)))
   }, [user])
+
+  function startEdit() {
+    setForm({
+      full_name:       profile?.full_name || '',
+      handle:          profile?.handle || '',
+      city:            profile?.city || '',
+      avatar_initials: profile?.avatar_initials || '',
+    })
+    setEditError('')
+    setEditing(true)
+  }
+
+  async function saveEdit(e) {
+    e.preventDefault()
+    const updates = {
+      full_name:       form.full_name.trim(),
+      handle:          form.handle.trim().toLowerCase().replace(/^@/, ''),
+      city:            form.city.trim() || null,
+      avatar_initials: form.avatar_initials.trim().toUpperCase().slice(0, 2),
+    }
+    if (!updates.full_name) return setEditError('El nombre no puede estar vacio.')
+    if (!/^[a-z0-9_.]{3,20}$/.test(updates.handle))
+      return setEditError('El usuario debe tener 3 a 20 caracteres: letras, numeros, punto o guion bajo.')
+    if (!updates.avatar_initials) {
+      const parts = updates.full_name.split(/\s+/)
+      updates.avatar_initials = ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase()
+    }
+    setSaving(true)
+    setEditError('')
+    const { data, error } = await updateProfile(user.id, updates)
+    setSaving(false)
+    if (error) {
+      setEditError(error.code === '23505'
+        ? 'Ese nombre de usuario ya esta en uso. Prueba otro.'
+        : 'No se pudo guardar. Intenta de nuevo.')
+      return
+    }
+    setProfile(data)
+    setEditing(false)
+  }
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -78,7 +122,7 @@ export default function Perfil() {
               </div>
             </div>
             <div style={{ display:'flex', gap:'8px', flexShrink:0 }}>
-              <button className={styles.editBtn}>Editar</button>
+              <button className={styles.editBtn} onClick={editing ? () => setEditing(false) : startEdit}>{editing ? 'Cancelar' : 'Editar'}</button>
               <button className={styles.editBtn} onClick={handleLogout}
                 style={{ color:'rgba(255,100,100,0.7)' }}>Salir</button>
             </div>
@@ -97,6 +141,37 @@ export default function Perfil() {
             ))}
           </div>
         </div>
+
+        {editing && (
+          <form onSubmit={saveEdit} style={{ padding:'20px', display:'grid', gap:'12px',
+            background:'var(--surface)', borderBottom:'1px solid var(--border)' }}>
+            {[
+              { key:'full_name',       label:'Nombre',            max:60 },
+              { key:'handle',          label:'Usuario (sin @)',   max:20 },
+              { key:'city',            label:'Ciudad',            max:40 },
+              { key:'avatar_initials', label:'Iniciales (2 letras)', max:2 },
+            ].map(f => (
+              <label key={f.key} style={{ display:'grid', gap:'4px', fontSize:'12px', color:'var(--muted)' }}>
+                {f.label}
+                <input
+                  value={form[f.key]}
+                  maxLength={f.max}
+                  onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                  style={{ padding:'10px 12px', fontSize:'14px', color:'var(--text)',
+                    border:'1px solid var(--border)', borderRadius:'10px',
+                    background:'var(--cream)', fontFamily:'var(--body)' }}
+                />
+              </label>
+            ))}
+            {editError && <div style={{ fontSize:'12px', color:'#d23c3c' }}>{editError}</div>}
+            <button type="submit" disabled={saving}
+              style={{ padding:'12px', border:'none', borderRadius:'10px', cursor:'pointer',
+                background:'var(--violet)', color:'#fff', fontWeight:600, fontSize:'14px',
+                opacity: saving ? 0.6 : 1 }}>
+              {saving ? 'Guardando...' : 'Guardar cambios'}
+            </button>
+          </form>
+        )}
 
         <div className={styles.tabs}>
           {TABS.map(t => (

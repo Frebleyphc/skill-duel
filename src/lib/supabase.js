@@ -30,7 +30,7 @@ export async function updateProfile(userId, updates) {
     .select()
     .single()
   if (error) console.error(error)
-  return data
+  return { data, error }
 }
 
 /* ── RANKING ────────────────────────────────────────────── */
